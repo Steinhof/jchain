@@ -1,11 +1,10 @@
 package jchain;
 
 import jchain.domain.Blockchain;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public class JChain {
-    private static final Logger logger = LogManager.getLogger(JChain.class);
 
     public static void main(String[] args) {
         Blockchain blockchain = new Blockchain();

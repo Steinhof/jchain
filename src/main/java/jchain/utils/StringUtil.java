@@ -45,8 +45,7 @@ public class StringUtil {
 
     public static String getJson(Object object) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.writeValueAsString(object);
+            return new ObjectMapper().writeValueAsString(object);
         } catch (JsonProcessingException error) {
             log.error(error);
             throw new RuntimeJsonMappingException(error.getMessage());
