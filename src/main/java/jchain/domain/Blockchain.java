@@ -1,25 +1,43 @@
 package jchain.domain;
 
-import jchain.utils.StringUtil;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
+@Log4j2
 public class Blockchain {
-    private static final Logger logger = LogManager.getLogger(Blockchain.class);
-
     private static final ArrayList<Block> chain = new ArrayList<>();
     private static final int DIFFICULTY = 5;
+    protected static final Map<String, TransactionOutput> UTXOs = new HashMap<>();
+    public static final float MINIMUM_TRANSACTION = 0.1f;
+    public static Transaction testTransaction;
 
+    /**
+     * Test method
+     */
     public void generate() {
-        Blockchain.chain.add(new Block("azula", "0"));
-        Blockchain.chain.get(0).mine(Blockchain.DIFFICULTY);
+        Wallet walletA = new Wallet();
+        Wallet walletB = new Wallet();
+        Wallet coinbase = new Wallet();
 
-        Blockchain.chain.add(new Block("azula 1", Blockchain.chain.get(Blockchain.chain.size() - 1).hash));
-        Blockchain.chain.get(0).mine(Blockchain.DIFFICULTY);
+        testTransaction = new Transaction(coinbase.publicKey, walletA.publicKey, 100f, null);
+        testTransaction.generateSignature(coinbase.privateKey);     //manually sign the genesis transaction
+        testTransaction.transactionId = "0"; //manually set the transaction id
+        testTransaction.outputs.add(new TransactionOutput(testTransaction.receiver, testTransaction.value, testTransaction.transactionId)); //manually add the Transactions Output
+        UTXOs.put(testTransaction.outputs.get(0).id, testTransaction.outputs.get(0)); //its important to store our first transaction in the UTXOs list.
 
-        logger.info(StringUtil.getJson(Blockchain.chain));
+        Block genesis = new Block("0");
+        genesis.addTransaction(testTransaction);
+        Blockchain.addBlock(genesis);
+
+        Block block1 = new Block(genesis.hash);
+        log.info(walletA.getBalance());
+
+        block1.addTransaction(walletA.sendFunds(walletB.publicKey, 40f));
+        Blockchain.addBlock(block1);
+        log.info(walletA.getBalance());
     }
 
     public boolean checkIntegrity() {
@@ -28,16 +46,21 @@ public class Blockchain {
             Block currentBlock = Blockchain.chain.get(i);
 
             if (!currentBlock.hash.equals(currentBlock.calculateHash())) {
-                logger.error("Current hashes are not equal");
+                log.error("Current hashes are not equal");
                 return false;
             }
 
             if (!previousBlock.hash.equals(currentBlock.previousHash)) {
-                logger.error("Previous hashes are not equal");
+                log.error("Previous hashes are not equal");
                 return false;
             }
         }
 
         return true;
+    }
+
+    public static void addBlock(Block newBlock) {
+        newBlock.mine(Blockchain.DIFFICULTY);
+        Blockchain.chain.add(newBlock);
     }
 }

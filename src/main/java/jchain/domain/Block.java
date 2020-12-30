@@ -1,29 +1,30 @@
 package jchain.domain;
 
 import jchain.utils.StringUtil;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
+import java.util.ArrayList;
 import java.util.Date;
 
+@Log4j2
 public class Block {
     public String hash;
     public final String previousHash;
-    public final String data;
+    public long timeStamp;
+    public String merkleRoot;
     private int nonce;
 
-    private static final Logger logger = LogManager.getLogger(Block.class);
+    public ArrayList<Transaction> transactions = new ArrayList<>();
 
-    public Block(String data, String previousHash) {
-        this.data = data;
+    public Block(String previousHash) {
         this.previousHash = previousHash;
-        this.hash = this.calculateHash();
+        this.timeStamp = new Date().getTime();
+        this.hash = calculateHash();
     }
 
     public String calculateHash() {
-        long timeStamp = new Date().getTime();
-
-        return StringUtil.applySha256(this.previousHash + timeStamp + this.nonce + this.data);
+        return StringUtil.applySha256(
+                previousHash + timeStamp + nonce + merkleRoot);
     }
 
     public void mine(int difficulty) {
@@ -34,7 +35,23 @@ public class Block {
             this.hash = calculateHash();
         }
 
-        logger.info("mined " + this.hash);
+        log.info("mined " + this.hash);
     }
 
+    public boolean addTransaction(Transaction transaction) {
+        if (transaction == null) {
+            return false;
+        }
+
+        if (!previousHash.equals("0") && !transaction.process()) {
+            log.error("Transaction failed to process. Discarded.");
+            return false;
+        }
+
+        transactions.add(transaction);
+
+        log.info("Transaction Successfully added to Block");
+
+        return true;
+    }
 }
